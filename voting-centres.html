@@ -83,7 +83,7 @@ dialog#help .close{position:absolute;top:10px;right:12px;border:0;background:non
 <div><div class="eyebrow">Victorian Socialists · 2026 state election</div><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><h1>Western Metro priority map</h1><button id="helpb" class="helpb" aria-label="How to use this page" title="How to use this page">?</button></div>
 <p class="sub">Every early voting centre and election-day booth on a Western Metropolitan district's VEC list, ranked by votes from Western Metro voters × their support squared (the Support ×2 model). Circle size and colour describe the whole centre.</p></div>
 <div class="seg" id="kind"><button aria-pressed="true" data-k="e">Early voting centres</button><button aria-pressed="false" data-k="b">Election day booths</button></div>
-<div><div class="lab">Use past VS votes (2022, 2025) in support</div><div class="seg" id="vsw"><button aria-pressed="true" data-v="on">On</button><button aria-pressed="false" data-v="off">Off</button></div></div>
+<div><div class="lab">Use past VS votes (2022, 2025) in support</div><div class="seg" id="vsw"><button aria-pressed="false" data-v="on">On</button><button aria-pressed="true" data-v="off">Off</button></div></div>
 <div><div class="lab">Rank</div><div class="seg three" id="mode"><button aria-pressed="true" data-m="all">All WM</button><button aria-pressed="false" data-m="io">Inner / Outer</button><button aria-pressed="false" data-m="dist">Per district</button></div></div>
 <div id="gwrap" hidden><label class="lab" for="gsel" id="glab">District</label><select id="gsel"></select></div>
 <div><div class="lab" id="clab">Circle colour: likely VS support among everyone voting there, compared with the Western Metro average</div><div class="key" id="ckey"></div></div>
@@ -100,7 +100,7 @@ dialog#help .close{position:absolute;top:10px;right:12px;border:0;background:non
 <p>This page shows which early voting centres (EVCs) and election-day booths matter most for VS in Western Metropolitan.</p>
 <h3>How to use it</h3>
 <ol><li>Switch between "Early voting centres" and "Election day booths" with the buttons.</li>
-<li>"Past VS vote" switches the 2022 state and 2025 federal VS results in or out of the support figures. Off uses our doorknock model only.</li>
+<li>"Past VS vote" switches the 2022 state and 2025 federal VS results in or out of the support figures. Off (the default) uses our doorknock model only.</li>
 <li>"All WM" ranks every centre for the whole region. "Inner / Outer" ranks within outer WM (the growth areas: Kororoit, Point Cook, Sunbury, Sydenham, Tarneit, Werribee) or inner WM (the established suburbs: Footscray, Laverton, Niddrie, St Albans, Williamstown). "Per district" ranks centres for one district: choose it from the menu, or click it on the map.</li>
 <li>Each circle is a voting centre. The number is its priority (1 = most important). Click a circle, or a name in the list, to see its name, address and details.</li></ol>
 <h3>What the circles mean</h3>
@@ -131,8 +131,8 @@ function refName(x){const r=refOf(x);return r?(r=='Inner'||r=='Outer'?r+' WM':r)
 const scol=v=>{for(let i=0;i<6;i++) if(v<SB[i][1]) return css('--s'+(i+1));return css('--s6')};
 const DISTS=D.sed.map(f=>f.properties.n).sort();
 const slug=n=>n.toLowerCase().replace(/[^a-z]+/g,'-');
-let kind='e',mode='all',grp='',vs='on';
-(()=>{const h=location.hash.slice(1).split('/');if(h[0]=='b')kind='b';if(h[3]=='novs'||h[2]=='novs')vs='off';if(h[2]=='novs')h[2]='';if(['all','io','dist'].includes(h[1]))mode=h[1];if(h[2]){if(mode=='io'){const n=GRPS.find(x=>slug(x)==h[2]);if(n)grp=n}else{const n=DISTS.find(x=>slug(x)==h[2]);if(n){grp=n;mode='dist'}}}})();
+let kind='e',mode='all',grp='',vs='off';
+(()=>{const h=location.hash.slice(1).split('/');if(h[0]=='b')kind='b';if(h[3]=='vs'||h[2]=='vs')vs='on';if(h[3]=='novs'||h[2]=='novs')vs='off';if(h[2]=='novs'||h[2]=='vs')h[2]='';if(['all','io','dist'].includes(h[1]))mode=h[1];if(h[2]){if(mode=='io'){const n=GRPS.find(x=>slug(x)==h[2]);if(n)grp=n}else{const n=DISTS.find(x=>slug(x)==h[2]);if(n){grp=n;mode='dist'}}}})();
 const map=L.map('map',{preferCanvas:true,attributionControl:true,zoomSnap:.25}).setView([-37.78,144.75],10);
 const cv=L.canvas({padding:.3});
 const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'});
@@ -156,7 +156,7 @@ function popup(x){
   const g=mode=='dist'&&grp?x.ds.find(z=>z[0]==grp):null;
   return `<div class="pp"><b>${x.n}</b><div>${x.a}</div><div class="sub">${x.vn}</div><div class="g"><span>Total votes at centre</span><span>${fmt(x.tv)}</span><span>Support, all voters</span><span>${sw(rel(x.ti,x))}<br><small>${svs(rel(x.ti,x),refName(x))}</small></span><span>Votes from WM voters</span><span>${fmt(x.nv)} (${x.nsh}%)</span><span>Rank in all WM</span><span>#${x.ra}</span>${Object.entries(x.rs).map(([a,b])=>`<span>Rank in ${a} WM</span><span>#${b[0]} · ${fmt(b[1])} votes</span>`).join('')}${g?`<span>Support, ${grp} voters</span><span>${sw(rel(g[3],x))}<br><small>${svs(rel(g[3],x),grp)}</small></span>`:''}<span>Past VS vote</span><span>2022 state Lower House: ${x.pv[4]}%${x.pv[5]?' at this booth':' (area)'}<br>2022 state Upper House: ${x.pv[0]}%${x.pv[1]?' at this booth':' (area)'}<br>2025 Senate: ${x.pv[2]}%${x.pv[3]?' at this booth':' (area)'}${x.pv[6]!=null?`<br>2025 House: ${x.pv[6]}%${x.pv[7]?' at this booth':' (area)'}`:''}</span><span>Belongs to</span><span>${x.host?x.host+' (outside WM); listed for '+x.od:x.od}</span></div><div class="dl2"><div class="lab" style="margin:6px 0 2px">Rank by district (VEC list)</div>${dd}${(x.oth||[]).map(z=>`<div><span>${z[0]} (outside WM)</span><span>${z[1]}% of votes</span></div>`).join('')}</div></div>`}
 function render(fit=true){
-  try{history.replaceState(null,'','#'+kind+'/'+mode+'/'+(grp?slug(grp):'')+(vs=='off'?'/novs':''))}catch(e){}
+  try{history.replaceState(null,'','#'+kind+'/'+mode+'/'+(grp?slug(grp):'')+(vs=='on'?'/vs':''))}catch(e){}
   document.querySelectorAll('#kind button').forEach(c=>c.setAttribute('aria-pressed',c.dataset.k==kind));
   document.querySelectorAll('#mode button').forEach(c=>c.setAttribute('aria-pressed',c.dataset.m==mode));document.querySelectorAll('#vsw button').forEach(c=>c.setAttribute('aria-pressed',c.dataset.v==vs));
   const gw=document.getElementById('gwrap'),gs=document.getElementById('gsel');gw.hidden=mode=='all';
